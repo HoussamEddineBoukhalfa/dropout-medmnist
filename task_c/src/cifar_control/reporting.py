@@ -28,6 +28,7 @@ SURFACE, INK, INK_2, MUTED, GRID, AXIS = "#fcfcfb", "#0b0b0b", "#52514e", "#8987
 
 METRIC_LABELS = {
     "test_acc": "Test accuracy",
+    "test_f1w": "Weighted F1 (paper's metric)",
     "gen_gap": "Generalisation gap (train - test)",
     "test_ece": "Expected calibration error",
     "test_auc": "Macro AUC",
@@ -71,11 +72,12 @@ def aggregate(per_seed: pd.DataFrame, baseline: str = "baseline") -> pd.DataFram
     out.columns = [f"{metric}_{stat}" for stat, metric in out.columns]
     out.insert(0, "n_seeds", per_seed.groupby("method", sort=False).size())
     if baseline in out.index:
-        for col in ("test_acc", "test_mc_acc"):
-            if f"{col}_mean" not in out:
+        # (column, baseline column it is compared with); MC dropout is compared with the plain baseline
+        for col, ref in (("test_acc", "test_acc"), ("test_f1w", "test_f1w"), ("test_mc_acc", "test_acc")):
+            if f"{col}_mean" not in out or f"{ref}_mean" not in out:
                 continue
-            delta = out[f"{col}_mean"] - out.loc[baseline, "test_acc_mean"]
-            noise = np.maximum(out[f"{col}_std"], out.loc[baseline, "test_acc_std"])
+            delta = out[f"{col}_mean"] - out.loc[baseline, f"{ref}_mean"]
+            noise = np.fmax(out[f"{col}_std"], out.loc[baseline, f"{ref}_std"])
             out[f"{col}_delta"] = delta
             out[f"{col}_conclusive"] = (delta.abs() > noise) & (out.index != baseline)
     return out.reset_index()
@@ -99,19 +101,25 @@ def _delta(row: pd.Series, col: str, baseline: str) -> str:
 def markdown_table(summary: pd.DataFrame, baseline: str = "baseline") -> str:
     """The results table, ready to paste into the report."""
     has_mc = "test_mc_acc_mean" in summary
-    header = ["Method", "Seeds", "Test acc (%)", "Δ vs baseline (conclusive?)", "Gen. gap (pp)", "ECE (%)",
-              "Macro AUC"]
+    has_f1 = "test_f1w_mean" in summary
+    header = ["Method", "Seeds", "Test acc (%)", "Δ vs baseline (conclusive?)"]
+    if has_f1:
+        header += ["Weighted F1 (%)", "Δ F1 (conclusive?)"]
+    header += ["Gen. gap (pp)", "ECE (%)", "Macro AUC"]
     if has_mc:
         header += ["MC dropout acc (%)", "MC dropout ECE (%)"]
     lines = ["| " + " | ".join(header) + " |", "|" + "---|" * len(header)]
     for _, row in summary.iterrows():
-        cells = [row["method"], str(int(row["n_seeds"])), _pm(row, "test_acc"), _delta(row, "test_acc", baseline),
-                 _pm(row, "gen_gap"), _pm(row, "test_ece"), _pm(row, "test_auc", 1.0, 3)]
+        cells = [row["method"], str(int(row["n_seeds"])), _pm(row, "test_acc"), _delta(row, "test_acc", baseline)]
+        if has_f1:
+            cells += [_pm(row, "test_f1w"), _delta(row, "test_f1w", baseline)]
+        cells += [_pm(row, "gen_gap"), _pm(row, "test_ece"), _pm(row, "test_auc", 1.0, 3)]
         if has_mc:
             cells += [_pm(row, "test_mc_acc"), _pm(row, "test_mc_ece")]
         lines.append("| " + " | ".join(cells) + " |")
     note = ("\nReduced CIFAR-10, last-epoch models. Mean ± sample std over seeds. A difference is marked "
-            "conclusive when |Δ| > max(std of the method, std of the baseline).\n")
+            "conclusive when |Δ| > max(std of the method, std of the baseline). Accuracy is the brief's common "
+            "result; weighted F1 is the metric reported by Opperman et al. (Table IV), for direct comparison.\n")
     return "\n".join(lines) + "\n" + note
 
 
@@ -190,7 +198,7 @@ def plot_final(per_seed: pd.DataFrame, methods: list[str], metrics: list[str], p
             std = vals.std(ddof=1) if len(vals) > 1 else 0.0
             ax.errorbar(i + 0.3, vals.mean(), yerr=std, fmt="o", ms=6, color=colors[method],
                         ecolor=colors[method], elinewidth=1.6, capsize=0, zorder=3)
-        ax.set_xticks(range(len(methods)), methods)
+        ax.set_xticks(range(len(methods)), [m.replace("+", " +\n") for m in methods])
         ax.set_xlim(-0.5, len(methods) - 0.3)
         ax.set_title(METRIC_LABELS.get(metric, metric), loc="left", fontsize=9.5)
         ax.set_ylabel("percentage points" if metric.endswith("_gap") else "%")

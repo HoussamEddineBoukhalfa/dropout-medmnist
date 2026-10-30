@@ -21,7 +21,7 @@ import pandas as pd
 import torch
 import yaml
 
-from .config import ExperimentConfig, from_dict, load_config, with_param
+from .config import ExperimentConfig, load_config, with_params
 from .evaluate import evaluate_validation
 from .reporting import method_colors, plot_ablations
 from .runs import train_run
@@ -46,17 +46,26 @@ def load_spec(path: str | Path) -> dict:
 
 def apply_changes(cfg: ExperimentConfig, changes: dict[str, Any], name: str) -> ExperimentConfig:
     """Copy of ``cfg`` with several fields changed, renamed and without a sweep spec."""
-    raw = {k: v for k, v in cfg.to_dict().items() if k != "sweep"}
-    out = from_dict({**raw, "name": name})
-    for key, value in changes.items():
-        out = with_param(out, key, value, name=name)
-    return out
+    return with_params(cfg, changes, name)
 
 
-def load_references(spec: dict, configs_dir: str | Path, overrides: list[str] | None = None
-                    ) -> dict[str, ExperimentConfig]:
-    return {name: apply_changes(load_config(Path(configs_dir) / ref["config"], overrides), ref.get("set", {}), name)
-            for name, ref in spec["references"].items()}
+def load_references(spec: dict, configs_dir: str | Path, overrides: list[str] | None = None,
+                    selected_dir: str | Path | None = None) -> dict[str, ExperimentConfig]:
+    """References are the configurations selected by run.py (``{selected: name}`` ->
+    ``<selected_dir>/<name>.yaml``), or a base config plus fixed values (``{config: file, set: {...}}``)."""
+    references = {}
+    for name, ref in spec["references"].items():
+        if "selected" in ref:
+            if selected_dir is None:
+                raise ValueError(f"reference '{name}' needs the selected configurations (selected_dir)")
+            path = Path(selected_dir) / f"{ref['selected']}.yaml"
+            if not path.exists():
+                raise FileNotFoundError(f"{path} not found: run scripts/run.py first (same --results)")
+            cfg = load_config(path, overrides)
+        else:
+            cfg = load_config(Path(configs_dir) / ref["config"], overrides)
+        references[name] = apply_changes(cfg, ref.get("set", {}), name)
+    return references
 
 
 def build_variants(spec: dict, references: dict[str, ExperimentConfig]) -> list[Variant]:

@@ -1,11 +1,12 @@
 #!/usr/bin/env python
-"""Ablations around the selected dropout (dense, p=0.7) and DropBlock (p=0.2, block 3) configurations.
+"""Ablations around the dropout and DropBlock configurations selected by scripts/run.py.
 
-Variants are defined in configs/ablations.yaml. Measured on the validation set with 3 seeds; the test
-set is not used. Finished runs are reused (the selected configurations and the baseline are already
-trained if run.py ran in the same output folder). Writes results/<dataset>/ablations/.
+Run scripts/run.py first with the same --out / --results: the references are read from
+results/<dataset>/selected/. Variants are defined in configs/ablations.yaml. Measured on the
+validation set with 3 seeds; the test set is not used. Finished runs are reused.
+Writes results/<dataset>/ablations/.
 
-  python scripts/ablate.py --quick --set data.root=/tmp/cifar     # 2-epoch dry run, 1 seed
+  python scripts/ablate.py --quick --set data.root=/tmp/cifar     # after run.py --quick
   python scripts/ablate.py --set data.root=/tmp/cifar
 """
 
@@ -39,16 +40,12 @@ def main() -> None:
         out, results_root, seeds = out / "quick", results_root / "quick", seeds[:1]
 
     configs = Path(args.configs)
-    references = load_references(spec, configs, overrides)
     baseline = load_config(configs / "baseline.yaml", overrides)
     results = results_root / baseline.data.name
-
-    # the references must be the configurations run.py selected
+    references = load_references(spec, configs, overrides, selected_dir=results / "selected")
     for name, ref in references.items():
-        selected = results / "selected" / f"{name}.yaml"
-        if selected.exists() and load_config(selected, overrides).run_id != ref.run_id:
-            log.warning("reference '%s' in %s differs from %s: update the spec if the selection changed",
-                        name, args.spec, selected)
+        log.info("reference %s: %s (run %s)", name,
+                 {k: v for k, v in vars(ref.model).items() if k.startswith(("dropout", "dropblock"))}, ref.run_id)
 
     variants = build_variants(spec, references)
     log.info("%d configurations x %d seeds (finished runs are reused)", len({v.cfg.run_id for v in variants}) + 1,
