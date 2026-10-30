@@ -1,0 +1,14 @@
+# DropBlock (Ghiasi et al., 2018). One tuned hyperparameter: the drop rate.
+# Block size fixed to 3: feature maps are only 28, 14 and 7 pixels wide, so the paper's default
+# of 7 would cover a whole 7x7 map. Applied in blocks 2 and 3, before pooling.
+# Use the same block size, blocks and grid as task B.
+inherit: protocol.yaml
+name: dropblock
+
+model:
+  dropblock_size: 3
+  dropblock_blocks: [2, 3]
+
+sweep:
+  param: model.dropblock_p
+  values: [0.05, 0.1, 0.15, 0.2, 0.3]

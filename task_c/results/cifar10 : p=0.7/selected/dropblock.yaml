@@ -1,0 +1,29 @@
+name: dropblock
+data:
+  name: cifar10
+  root: /tmp/cifar
+  split_seed: 42
+  n_train: 4500
+  n_val: 8000
+  image_size: 28
+model:
+  widths:
+  - 32
+  - 64
+  - 128
+  hidden: 256
+  dropout_p: 0.0
+  dropout_pos: dense
+  spatial_p: 0.0
+  dropblock_p: 0.2
+  dropblock_size: 3
+  dropblock_blocks:
+  - 2
+  - 3
+train:
+  epochs: 100
+  batch_size: 128
+  lr: 0.05
+  momentum: 0.9
+  weight_decay: 0.0
+  scheduler: cosine

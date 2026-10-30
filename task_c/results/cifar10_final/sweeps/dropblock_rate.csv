@@ -1,0 +1,6 @@
+experiment,param,value,run_id,seed,val_acc,val_loss,min_val_loss,train_loss,diverged,selected
+dropblock,model.dropblock_p,0.05,796db7d46c,0,0.5145,5.5570390625,1.4991588134765625,0.0002340918117099338,False,False
+dropblock,model.dropblock_p,0.1,3f52adbfbc,0,0.51575,5.62831396484375,1.5063994140625,0.004516596476236979,False,False
+dropblock,model.dropblock_p,0.15,150eba0b7e,0,0.521625,4.9232001953125,1.4843388671875,0.0034492528703477647,False,False
+dropblock,model.dropblock_p,0.2,cdf14121f5,0,0.52025,4.79663037109375,1.5180224609375,0.013740177578396268,False,False
+dropblock,model.dropblock_p,0.3,8436bf0cc7,0,0.529125,4.06971533203125,1.485892578125,0.030044084337022568,False,True

@@ -1,0 +1,3 @@
+experiment,param,value,run_id,seed,val_acc,val_loss,min_val_loss,train_loss,diverged,selected
+dropout_rate,model.dropout_pos,dense,50f605bbc5,0,0.55075,4.59221240234375,1.38160205078125,0.0032478694915771484,False,True
+dropout_rate,model.dropout_pos,conv,2420a5c1e4,0,0.489125,1.4327578125,1.417154296875,1.0420201822916666,False,False

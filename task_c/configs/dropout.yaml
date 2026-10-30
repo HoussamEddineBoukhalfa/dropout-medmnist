@@ -1,0 +1,12 @@
+# Standard dropout. One tuned hyperparameter: the rate, at the dense position.
+# The conv position is then tested once at the selected rate (scripts/run.py).
+# Use the same grid as task A so both datasets are compared on the same values.
+inherit: protocol.yaml
+name: dropout
+
+model:
+  dropout_pos: dense
+
+sweep:
+  param: model.dropout_p
+  values: [0.1, 0.2, 0.3, 0.5, 0.7]

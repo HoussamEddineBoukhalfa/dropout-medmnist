@@ -1,0 +1,54 @@
+# Ablations around the configurations selected on validation by scripts/run.py
+# (results/<dataset>/selected/dropout.yaml and dropblock.yaml), so run.py must run first.
+# Each variant changes one thing from its reference. Measured on VALIDATION, 3 seeds:
+# ablations analyse the selected methods, they do not re-tune them, so the test set stays untouched.
+
+seeds: [0, 1, 2]
+
+references:
+  dropout: {selected: dropout}       # dense position, selected rate
+  dropblock: {selected: dropblock}   # paper settings (block 7, linear schedule, blocks 2-3), selected rate
+
+groups:
+  - name: dropout_rate
+    title: "Dropout rate above the grid (dense)"
+    reference: dropout
+    reference_label: "selected rate"
+    variants:                        # 0.7 is the top of the grid: is the optimum higher?
+      "p=0.8": {model.dropout_p: 0.8}
+      "p=0.9": {model.dropout_p: 0.9}
+
+  - name: dropout_position
+    title: "Dropout position: conv layers at their own rates"
+    reference: dropout
+    reference_label: "dense (selected)"
+    variants:                        # conv layers need lower rates than the dense layer
+      "conv p=0.1": {model.dropout_pos: conv, model.dropout_p: 0.1}
+      "conv p=0.2": {model.dropout_pos: conv, model.dropout_p: 0.2}
+      "conv p=0.3": {model.dropout_pos: conv, model.dropout_p: 0.3}
+      "conv p=0.4": {model.dropout_pos: conv, model.dropout_p: 0.4}
+      "conv p=0.5": {model.dropout_pos: conv, model.dropout_p: 0.5}
+
+  - name: dropblock_size
+    title: "DropBlock block size"
+    reference: dropblock
+    reference_label: "block 7 (paper)"
+    variants:                        # 1 = unstructured dropout on feature maps
+      "block 1": {model.dropblock_size: 1}
+      "block 3": {model.dropblock_size: 3}
+      "block 5": {model.dropblock_size: 5}
+
+  - name: dropblock_placement
+    title: "DropBlock placement"
+    reference: dropblock
+    reference_label: "blocks 2-3 (paper)"
+    variants:
+      "block 3 only": {model.dropblock_blocks: [3]}
+      "blocks 1-3": {model.dropblock_blocks: [1, 2, 3]}
+
+  - name: dropblock_schedule
+    title: "DropBlock rate schedule"
+    reference: dropblock
+    reference_label: "linear (paper)"
+    variants:
+      "constant": {model.dropblock_schedule: constant}

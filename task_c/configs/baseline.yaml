@@ -1,0 +1,3 @@
+# Unregularised baseline: the protocol as is.
+inherit: protocol.yaml
+name: baseline
