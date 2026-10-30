@@ -32,8 +32,8 @@ def test_each_variant_changes_only_what_it_says():
     assert variants[("dropblock_placement", "block 3 only")].model.dropblock_blocks == [3]
     combo = variants[("combination", "+ DropBlock p=0.2")].model
     assert combo.dropout_p == 0.7 and combo.dropblock_p == 0.2
-    # 11 variants + 2 references; the dropout reference sits in 3 groups and the DropBlock one in 2
-    assert len({cfg.run_id for cfg in variants.values()}) == 13
+    # 13 variants + 2 references; the dropout reference sits in 3 groups and the DropBlock one in 2
+    assert len({cfg.run_id for cfg in variants.values()}) == 15
 
 
 def test_ablation_pipeline_on_synthetic(tiny_cfg, tmp_path):
