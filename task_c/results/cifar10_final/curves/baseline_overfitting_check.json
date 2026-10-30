@@ -1,0 +1,10 @@
+{
+  "best_val_epoch": 14,
+  "min_val_loss": 1.4587642822265625,
+  "last_val_loss": 6.459205078125,
+  "val_loss_rise": 5.000440795898437,
+  "last_train_loss": 2.0217786232630413e-05,
+  "train_acc_last": 1.0,
+  "val_acc_last": 0.50025,
+  "overfits": true
+}
