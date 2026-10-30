@@ -1,6 +1,6 @@
 """Task C - reduced CIFAR-10 control for the G2 dropout study.
 
-runs the PathMNIST protocol unchanged on non-medical images (baseline, dropout, DropBlock),
+Runs the PathMNIST protocol unchanged on non-medical images (baseline, dropout, DropBlock),
 so that differences with Opperman et al. (2026) can be attributed to the domain or to the protocol.
 
 Modules

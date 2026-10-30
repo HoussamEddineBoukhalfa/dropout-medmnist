@@ -4,6 +4,12 @@ The test set is used once, at the end: results are written to ``test_metrics.jso
 directory and reused afterwards (``force=True`` recomputes). Class probabilities are saved next to
 them (``probs_test.npz``) so reliability diagrams never need the model again.
 
+Reported per run:
+
+* ``test_acc`` (the common main result), ``test_nll``, ``test_ece``, ``test_auc``
+* ``train_acc`` and ``val_acc`` (eval mode)
+* ``gen_gap`` = train_acc - test_acc (overfitting, as defined in the brief)
+* ``test_mc_*`` : the same metrics with Monte Carlo dropout when ``mc_samples > 0``
 """
 
 from __future__ import annotations
@@ -18,7 +24,7 @@ from torch import nn
 
 from .config import ExperimentConfig
 from .data import TEST, TRAIN, VAL
-from .metrics import DEFAULT_ECE_BINS, all_metrics
+from .metrics import DEFAULT_ECE_BINS, accuracy, all_metrics
 from .models import STOCHASTIC_LAYERS
 from .runs import get_data, load_trained, run_dir
 from .utils import load_json, save_json
@@ -84,4 +90,27 @@ def evaluate_run(cfg: ExperimentConfig, seed: int, out_root: str | Path, device:
     row["gen_gap"] = row["train_acc"] - row["test_acc"]
     save_json(row, cache)
     log.info("[%s seed %d] test evaluated: acc %.4f", cfg.name, seed, row["test_acc"])
+    return row
+
+
+def evaluate_validation(cfg: ExperimentConfig, seed: int, out_root: str | Path, device: torch.device,
+                        n_bins: int = DEFAULT_ECE_BINS) -> dict:
+    """Validation-only metrics, for analyses that must not touch the test set (ablations).
+    Loads train + val only. Cached in ``val_metrics.json``."""
+    path = run_dir(out_root, cfg, seed)
+    cache = path / "val_metrics.json"
+    if cache.exists():
+        cached = load_json(cache)
+        if cached.get("ece_bins") == n_bins:
+            return cached
+
+    bundle = get_data(cfg.data, device)
+    model = load_trained(cfg, seed, out_root, bundle, device)
+    train, val = bundle.splits[TRAIN], bundle.splits[VAL]
+    row: dict = {"run_id": cfg.run_id, "seed": seed, "ece_bins": n_bins,
+                 "train_acc": accuracy(predict_proba(model, train.x), train.y.cpu().numpy())}
+    row.update({f"val_{k}": v for k, v in
+                all_metrics(predict_proba(model, val.x), val.y.cpu().numpy(), n_bins).items()})
+    row["gen_gap_val"] = row["train_acc"] - row["val_acc"]
+    save_json(row, cache)
     return row

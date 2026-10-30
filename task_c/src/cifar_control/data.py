@@ -11,6 +11,7 @@ Images are resized once 32x32 -> 28x28 (bilinear, antialiased) so the network is
 PathMNIST one, scaled to [0, 1] and standardised per channel with statistics of the training
 subset only. No other transformation is applied.
 
+``synthetic`` gives small learnable random images in the same layout, for offline tests.
 """
 
 from __future__ import annotations

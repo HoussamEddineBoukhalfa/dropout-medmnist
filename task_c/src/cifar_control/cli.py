@@ -1,4 +1,4 @@
-"""arguments shared by the two scripts. Default paths are relative to the task_c folder,
+"""Arguments shared by the two scripts. Default paths are relative to the task_c folder,
 so the scripts work from any working directory."""
 
 from __future__ import annotations

@@ -1,0 +1,57 @@
+# Ablations around the configurations selected on validation (results/cifar10/selected/):
+#   dropout   = standard dropout, dense position, p = 0.7
+#   dropblock = DropBlock, p = 0.2, block size 3, conv blocks 2-3
+# Each variant changes one thing from its reference. Measured on VALIDATION, 3 seeds:
+# ablations analyse the selected methods, they do not re-tune them, so the test set stays untouched.
+
+seeds: [0, 1, 2]
+
+references:                        # rebuilt from the base configs so the ablation does not depend on a session
+  dropout:
+    config: dropout.yaml
+    set: {model.dropout_p: 0.7, model.dropout_pos: dense}
+  dropblock:
+    config: dropblock.yaml
+    set: {model.dropblock_p: 0.2}
+
+groups:
+  - name: dropout_rate
+    title: "Dropout rate beyond the grid (dense)"
+    reference: dropout
+    reference_label: "p=0.7 (selected)"
+    variants:                      # 0.7 was the top of the grid: is the optimum higher?
+      "p=0.8": {model.dropout_p: 0.8}
+      "p=0.9": {model.dropout_p: 0.9}
+
+  - name: dropout_position
+    title: "Dropout position at a fair rate"
+    reference: dropout
+    reference_label: "dense p=0.7 (selected)"
+    variants:                      # conv dropout at 0.7 underfit; conv layers need lower rates
+      "conv p=0.1": {model.dropout_pos: conv, model.dropout_p: 0.1}
+      "conv p=0.2": {model.dropout_pos: conv, model.dropout_p: 0.2}
+      "conv p=0.3": {model.dropout_pos: conv, model.dropout_p: 0.3}
+
+  - name: dropblock_size
+    title: "DropBlock block size (p=0.2)"
+    reference: dropblock
+    reference_label: "block 3 (selected)"
+    variants:                      # 1 = element-wise dropout on feature maps; 7 = whole 7x7 maps in block 3
+      "block 1": {model.dropblock_size: 1}
+      "block 5": {model.dropblock_size: 5}
+      "block 7": {model.dropblock_size: 7}
+
+  - name: dropblock_placement
+    title: "DropBlock placement (p=0.2, block 3)"
+    reference: dropblock
+    reference_label: "blocks 2-3 (selected)"
+    variants:
+      "block 3 only": {model.dropblock_blocks: [3]}
+      "blocks 1-3": {model.dropblock_blocks: [1, 2, 3]}
+
+  - name: combination
+    title: "Dropout + DropBlock"
+    reference: dropout
+    reference_label: "dropout only (selected)"
+    variants:                      # one of the 2 combinations allowed by the brief
+      "+ DropBlock p=0.2": {model.dropblock_p: 0.2, model.dropblock_size: 3, model.dropblock_blocks: [2, 3]}

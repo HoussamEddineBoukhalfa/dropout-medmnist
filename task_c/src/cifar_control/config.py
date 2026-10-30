@@ -1,4 +1,12 @@
 """Experiment configuration.
+
+Configs are YAML files mapped onto typed dataclasses. A file may ``inherit`` from another
+(path relative to itself); keys are deep-merged. Overrides use dotted keys,
+e.g. ``--set train.epochs=2 model.dropout_p=0.3``.
+
+Every run is identified by a hash of the fields that change the trained model (data protocol,
+model, training). Two configs describing the same model share a run directory, so a run is never
+trained twice - e.g. the tuning run with seed 0 is reused as seed 0 of the final evaluation.
 """
 
 from __future__ import annotations

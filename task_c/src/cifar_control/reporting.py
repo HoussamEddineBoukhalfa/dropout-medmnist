@@ -221,3 +221,40 @@ def plot_reliability(curves: dict[str, tuple[np.ndarray, np.ndarray]], methods: 
         ax.set_aspect("equal")
     fig.tight_layout()
     return _save(fig, path)
+
+
+def plot_ablations(panels: list[dict], baseline_val_acc: float, path: str | Path, ncols: int = 3) -> Path:
+    """One panel per ablation group: validation accuracy per variant (seed dots, mean +/- std).
+    The selected configuration is ringed; the dashed line is the baseline.
+
+    Each panel dict: title, per_seed (rows of one group: variant, reference, val_acc), color.
+    """
+    _style()
+    nrows = int(np.ceil(len(panels) / ncols))
+    fig, axes = plt.subplots(nrows, min(ncols, len(panels)), figsize=(4.4 * min(ncols, len(panels)), 3.6 * nrows),
+                             squeeze=False)
+    for ax in axes.flat[len(panels):]:
+        ax.set_visible(False)
+    for ax, panel in zip(axes.flat, panels):
+        df = panel["per_seed"]
+        labels = list(dict.fromkeys(df["variant"]))
+        for i, label in enumerate(labels):
+            rows = df[df["variant"] == label]
+            vals = rows["val_acc"].to_numpy() * 100
+            jitter = np.linspace(-0.1, 0.1, len(vals)) if len(vals) > 1 else np.zeros(1)
+            ax.scatter(i + jitter, vals, s=14, color=panel["color"], alpha=0.4, linewidths=0, zorder=2)
+            std = vals.std(ddof=1) if len(vals) > 1 else 0.0
+            ax.errorbar(i + 0.25, vals.mean(), yerr=std, fmt="o", ms=6, color=panel["color"],
+                        elinewidth=1.6, capsize=0, zorder=3)
+            if bool(rows["reference"].iloc[0]):
+                ax.plot(i + 0.25, vals.mean(), "o", ms=12, mfc="none", mec=panel["color"], mew=1.5, zorder=3)
+        ax.axhline(baseline_val_acc * 100, color=MUTED, lw=1.2, ls=(0, (4, 3)))
+        ax.annotate("baseline", (len(labels) - 0.6, baseline_val_acc * 100), xytext=(0, 4),
+                    textcoords="offset points", ha="right", fontsize=8, color=MUTED)
+        ax.set_xticks(range(len(labels)), labels, rotation=20, ha="right")
+        ax.set_xlim(-0.5, len(labels) - 0.4)
+        ax.margins(y=0.15)
+        ax.set_title(panel["title"], loc="left", fontsize=10)
+        ax.set_ylabel("Validation accuracy (%)")
+    fig.tight_layout()
+    return _save(fig, path)
