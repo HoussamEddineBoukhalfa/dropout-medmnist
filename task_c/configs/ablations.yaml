@@ -31,6 +31,8 @@ groups:
       "conv p=0.1": {model.dropout_pos: conv, model.dropout_p: 0.1}
       "conv p=0.2": {model.dropout_pos: conv, model.dropout_p: 0.2}
       "conv p=0.3": {model.dropout_pos: conv, model.dropout_p: 0.3}
+      "conv p=0.4": {model.dropout_pos: conv, model.dropout_p: 0.4}   # still improving at 0.3: where does it peak?
+      "conv p=0.5": {model.dropout_pos: conv, model.dropout_p: 0.5}
 
   - name: dropblock_size
     title: "DropBlock block size (p=0.2)"
