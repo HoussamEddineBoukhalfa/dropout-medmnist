@@ -35,12 +35,14 @@ class DataConfig:
 class ModelConfig:
     widths: list[int] = field(default_factory=lambda: [32, 64, 128])
     hidden: int = 256
+    init: str = "kaiming"  # kaiming: He normal weights, zero biases (group protocol) | default: PyTorch's
     dropout_p: float = 0.0  # standard element-wise dropout rate
     dropout_pos: str = "dense"  # dense: after the hidden dense layer | conv: after each pooling layer
     spatial_p: float = 0.0  # spatial dropout (whole feature maps) before each pooling layer
-    dropblock_p: float = 0.0  # DropBlock drop rate
-    dropblock_size: int = 3  # DropBlock block side (odd)
+    dropblock_p: float = 0.0  # DropBlock drop rate (the one tuned hyperparameter)
+    dropblock_size: int = 7  # DropBlock block side (odd); 7 = Ghiasi et al.'s value
     dropblock_blocks: list[int] = field(default_factory=lambda: [2, 3])  # conv blocks (1-indexed) with DropBlock
+    dropblock_schedule: str = "linear"  # linear: rate grows 0 -> p over training (paper) | constant
 
 
 @dataclass
@@ -51,6 +53,7 @@ class TrainConfig:
     momentum: float = 0.9
     weight_decay: float = 0.0
     scheduler: str = "cosine"  # cosine | constant
+    grad_clip: float = 1.0  # max gradient norm per step (group protocol); 0 = off
 
 
 @dataclass
@@ -176,6 +179,15 @@ def with_param(cfg: ExperimentConfig, dotted: str, value: Any, name: str | None 
     raw[section][key] = value
     raw["name"] = name or cfg.name
     return from_dict(raw)
+
+
+def with_params(cfg: ExperimentConfig, changes: dict[str, Any], name: str | None = None) -> ExperimentConfig:
+    """Copy of ``cfg`` with several fields changed (dotted keys), renamed, without a sweep spec."""
+    raw = {k: v for k, v in cfg.to_dict().items() if k != "sweep"}
+    out = from_dict({**raw, "name": name or cfg.name})
+    for key, value in changes.items():
+        out = with_param(out, key, value, name=name or cfg.name)
+    return out
 
 
 def save_config(cfg: ExperimentConfig, path: str | Path) -> None:

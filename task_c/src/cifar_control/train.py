@@ -64,6 +64,9 @@ def train_model(model: nn.Module, train: Split, val: Split, cfg: TrainConfig, se
 
     history: dict = {k: [] for k in ("epoch", "lr", "train_loss", "train_acc", "val_loss", "val_acc")}
     history["diverged"] = False
+    scheduled = [m for m in model.modules() if hasattr(m, "set_progress")]  # scheduled DropBlock
+    total_steps = cfg.epochs * math.ceil(n / cfg.batch_size)
+    step = 0
     start = time.perf_counter()
     for epoch in range(1, cfg.epochs + 1):
         model.train()
@@ -71,12 +74,17 @@ def train_model(model: nn.Module, train: Split, val: Split, cfg: TrainConfig, se
         total_loss = torch.zeros((), device=device)
         correct = torch.zeros((), device=device)
         for i in range(0, n, cfg.batch_size):
+            for module in scheduled:
+                module.set_progress(step / total_steps)
+            step += 1
             idx = order[i:i + cfg.batch_size]
             x, y = train.x[idx], train.y[idx]
             logits = model(x)
             loss = F.cross_entropy(logits, y)
             optimizer.zero_grad(set_to_none=True)
             loss.backward()
+            if cfg.grad_clip > 0:  # caps a single update; same for every method (group protocol)
+                torch.nn.utils.clip_grad_norm_(model.parameters(), cfg.grad_clip)
             optimizer.step()
             total_loss += loss.detach() * len(idx)
             correct += (logits.detach().argmax(1) == y).sum()
@@ -98,5 +106,7 @@ def train_model(model: nn.Module, train: Split, val: Split, cfg: TrainConfig, se
             log.info("epoch %3d/%d  lr %.4f  train loss %.4f acc %.3f | val loss %.4f acc %.3f",
                      epoch, cfg.epochs, lr, train_loss, history["train_acc"][-1], val_loss, val_acc)
 
+    for module in scheduled:  # leave every scheduled layer at its target rate (MC dropout uses it)
+        module.set_progress(1.0)
     history["seconds"] = time.perf_counter() - start
     return history
