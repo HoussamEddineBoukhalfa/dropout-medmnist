@@ -16,8 +16,15 @@ def test_configs_follow_the_protocol():
     assert base.data.name == "cifar10" and base.data.n_train == 4500 and base.data.n_val == 8000
     assert base.train.epochs == 100 and base.train.lr == 0.05 and base.train.batch_size == 128
     assert base.model.dropout_p == 0.0 and base.model.dropblock_p == 0.0 and base.train.weight_decay == 0.0
+    # task A's protocol on PathMNIST: common seed 0, He init, gradient clipping at 1.0, same dropout grid
+    assert base.data.split_seed == 0 and base.model.init == "kaiming" and base.train.grad_clip == 1.0
+    assert dropout.sweep.values == [0.3, 0.5, 0.6, 0.7, 0.8]
     for cfg in (dropout, dropblock):
         assert len(cfg.sweep.values) <= 5  # at most 5 values per hyperparameter
+    # one tuned hyperparameter each; the others are fixed to the proposing papers' values
+    assert dropout.sweep.param == "model.dropout_p" and dropout.model.dropout_pos == "dense"
+    assert dropblock.sweep.param == "model.dropblock_p"
+    assert (dropblock.model.dropblock_size, dropblock.model.dropblock_schedule) == (7, "linear")
 
 
 def test_baseline_and_zero_rate_share_a_run_id():

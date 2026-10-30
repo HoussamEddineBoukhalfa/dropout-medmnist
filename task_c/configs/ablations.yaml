@@ -11,11 +11,10 @@ references:
 
 groups:
   - name: dropout_rate
-    title: "Dropout rate above the grid (dense)"
+    title: "Dropout rate beyond the grid (dense)"
     reference: dropout
     reference_label: "selected rate"
-    variants:                        # 0.7 is the top of the grid: is the optimum higher?
-      "p=0.8": {model.dropout_p: 0.8}
+    variants:                        # the grid stops at 0.8 (task A's grid): is the optimum higher?
       "p=0.9": {model.dropout_p: 0.9}
 
   - name: dropout_position

@@ -1,10 +1,10 @@
 # Common protocol of the brief (sections 3-4), applied unchanged to reduced CIFAR-10.
-# These values must stay identical to the PathMNIST runs of tasks A and B.
+# These values must stay identical to the PathMNIST runs of tasks A and B (task A's notebook).
 
 data:
   name: cifar10
   root: data             # download / cache directory (resolved relative to task_c/)
-  split_seed: 42         # same common seed as the PathMNIST subset
+  split_seed: 0          # the group's common seed (task A: DATA_SEED = 0)
   n_train: 4500          # balanced subset (450 per class), the only training regime
   n_val: 8000            # tuning only
   image_size: 28         # CIFAR-10 resized 32 -> 28 so the network is identical
@@ -12,6 +12,7 @@ data:
 model:                   # 3 x [conv3x3-ReLU-conv3x3-ReLU-maxpool], 32/64/128 filters, dense 256
   widths: [32, 64, 128]
   hidden: 256
+  init: kaiming          # He init, zero biases: task A's fix for divergence at lr 0.05 (not a regulariser)
   dropout_p: 0.0         # baseline: no regularisation at all
   spatial_p: 0.0
   dropblock_p: 0.0
@@ -23,3 +24,4 @@ train:
   momentum: 0.9
   weight_decay: 0.0
   scheduler: cosine      # stepped once per epoch; the last-epoch model is evaluated
+  grad_clip: 1.0         # gradient-norm clipping, task A's fix, applied to every method (not a regulariser)

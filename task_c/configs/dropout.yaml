@@ -1,6 +1,8 @@
-# Standard dropout. One tuned hyperparameter: the rate, at the dense position.
-# The conv position is then tested once at the selected rate (scripts/run.py).
-# Use the same grid as task A so both datasets are compared on the same values.
+# Standard dropout (Srivastava et al., 2014). One tuned hyperparameter: the rate.
+# The position is fixed beforehand to the dense layer (the classic placement, as in task A); it is
+# not tuned, so that only one hyperparameter is tuned, as the brief requires. The conv position is
+# compared in the ablations (configs/ablations.yaml) on validation.
+# Same grid as task A on PathMNIST, so both datasets are compared on the same values.
 inherit: protocol.yaml
 name: dropout
 
@@ -9,4 +11,4 @@ model:
 
 sweep:
   param: model.dropout_p
-  values: [0.1, 0.2, 0.3, 0.5, 0.7]
+  values: [0.3, 0.5, 0.6, 0.7, 0.8]

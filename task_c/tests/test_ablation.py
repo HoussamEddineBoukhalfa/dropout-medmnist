@@ -44,8 +44,8 @@ def test_each_variant_changes_only_what_it_says(selected_dir):
     assert variants[("dropblock_schedule", "constant")].model.dropblock_schedule == "constant"
     conv = variants[("dropout_position", "conv p=0.4")].model
     assert (conv.dropout_pos, conv.dropout_p) == ("conv", 0.4)
-    # 13 variants + 2 references (each reference appears in several groups)
-    assert len({cfg.run_id for cfg in variants.values()}) == 15
+    # 12 variants + 2 references (each reference appears in several groups)
+    assert len({cfg.run_id for cfg in variants.values()}) == 14
 
 
 def test_ablation_pipeline_on_synthetic(tiny_cfg, tmp_path):
